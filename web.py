@@ -56,7 +56,7 @@ def stream():
                     buffer = buffer.strip()  # Remove leading/trailing spaces
 
                     if buffer:  # If there's content right after </think>, send it immediately
-                        yield f"data: {buffer.replace('\n', '<br>')}\n\n"
+                        yield "data: {}\n\n".format(buffer.replace("\n", "<br>"))
                 continue  # Skip yielding during thinking phase
             
             # Stream response normally after </think>
