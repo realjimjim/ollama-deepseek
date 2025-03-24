@@ -60,7 +60,7 @@ def stream():
                 continue  # Skip yielding during thinking phase
             
             # Stream response normally after </think>
-            yield f"data: {text.replace('\n', '<br>')}\n\n"
+            yield "data: {}\n\n".format(text.replace("\n", "<br>"))
 
         messages.append({"role": "assistant", "content": buffer.strip()})  # Store the response
 
