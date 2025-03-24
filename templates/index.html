@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - Modern UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        async function sendMessage() {
+            let userInput = document.getElementById("user_input").value.trim();
+            if (userInput === "") return;
+
+            document.getElementById("user_input").value = "";
+            let chatbox = document.getElementById("chatbox");
+            let aiResponseId = "ai_response_" + Date.now();
+
+            // Append User Message
+            chatbox.innerHTML += `
+                <div class="flex justify-end mb-2">
+                    <div class="bg-blue-500 text-white px-4 py-3 rounded-2xl shadow-lg max-w-xs md:max-w-md animate-fadeIn">
+                        <b>You:</b> ${userInput.replace(/\n/g, "<br>")}
+                    </div>
+                </div>
+            `;
+
+            chatbox.scrollTop = chatbox.scrollHeight;
+
+            await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: userInput })
+            });
+
+            // AI Response Container
+            let aiResponse = document.createElement("div");
+            aiResponse.className = "flex justify-start mb-2";
+            aiResponse.innerHTML = `
+                <div class="glass-ai text-gray-800 px-4 py-3 rounded-2xl shadow-md max-w-xs md:max-w-md animate-fadeIn">
+                    <b>🤖:</b> <span id="${aiResponseId}" class="typing">
+                        <span id="dotted" class="dot-typing">...</span>
+                    </span>
+                </div>
+            `;
+            chatbox.appendChild(aiResponse);
+
+            const eventSource = new EventSource("/stream");
+
+            eventSource.onmessage = function(event) {
+                let responseElement = document.getElementById(aiResponseId);
+                let dotsElement = responseElement.querySelector("#dotted");
+
+                if (dotsElement) {
+                    dotsElement.remove(); // Remove "..." once AI starts responding
+                }
+
+                let formattedText = event.data.replace(/\n/g, "<br>");
+                responseElement.innerHTML += formattedText;
+                chatbox.scrollTop = chatbox.scrollHeight;
+            };
+
+            eventSource.onerror = function() {
+                eventSource.close();
+            };
+        }
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+
+        @keyframes typing {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+        .dot-typing {
+            animation: typing 1.5s infinite;
+            display: inline-block;
+        }
+
+        .glass-ai {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.2), -4px -4px 10px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col bg-gradient-to-br from-blue-900 to-gray-900 text-white">
+    
+    <div class="bg-blue-600 text-white text-center text-2xl py-4 font-bold shadow-md">
+        AI Chat 💬
+    </div>
+
+    <div id="chatbox" class="flex-1 overflow-y-auto p-6 space-y-4 glass-ai shadow-inner rounded-t-lg">
+        <p class="text-center text-gray-300 italic">Start chatting...</p>
+    </div>
+
+    <div class="p-4 flex items-end space-x-2 shadow-lg rounded-b-lg bg-gray-900">
+        <textarea id="user_input" class="flex-1 p-3 glass-input text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 h-20 resize-none" placeholder="Type a message..." onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"></textarea>
+        <button onclick="sendMessage()" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">Send</button>
+    </div>    
+
+</body>
+</html>
