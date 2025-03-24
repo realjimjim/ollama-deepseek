@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: your-app-name
-    runtime: python
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.12"
