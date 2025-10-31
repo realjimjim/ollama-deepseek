@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
 # Install Ollama + killall
 RUN apt-get update && apt-get install -y curl procps && \
@@ -20,6 +20,13 @@ RUN ollama serve & \
 # Ollama config
 ENV OLLAMA_HOST=0.0.0.0:11434
 ENV PORT=10000
+ENV OLLAMA_MAX_LOADED_MODELS=1
+ENV OLLAMA_KEEP_ALIVE=1m
+ENV OLLAMA_NUM_PARALLEL=1
+ENV OLLAMA_FLASH_ATTENTION=1
+ENV OLLAMA_KV_CACHE_TYPE=q4_0
+ENV OLLAMA_MAX_QUEUE=10
+ENV OLLAMA_CONTEXT_LENGTH=2048
 EXPOSE $PORT
 
 # Runtime: Start Ollama + Flask
