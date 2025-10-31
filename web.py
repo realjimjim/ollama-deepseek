@@ -36,7 +36,7 @@ def stream():
         ]
 
         stream = ollama.chat(
-            model="deepseek-r1:1.5b",
+            model="phi3:mini",
             messages=temp_messages,
             options={"temperature": 1, "top_k": 1, "top_p": 0.05},
             stream=True

@@ -14,7 +14,7 @@ COPY . .
 # === FIX: Start Ollama, pull model, stop with killall ===
 RUN ollama serve & \
     sleep 10 && \
-    ollama pull deepseek-r1:1.5b && \
+    ollama pull phi3:mini && \
     killall ollama
 
 # Ollama config
