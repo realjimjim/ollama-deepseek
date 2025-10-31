@@ -5,20 +5,25 @@ RUN apt-get update && apt-get install -y curl && \
     curl -fsSL https://ollama.com/install.sh | sh && \
     rm -rf /var/lib/apt/lists/*
 
-# Set up Python app
+# Set up app
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-# Pull your model (change 'deepseek-coder' if using something else)
-RUN ollama pull deepseek-coder
+# === FIX: Start Ollama server, then pull model ===
+RUN ollama serve & \
+    sleep 10 && \
+    ollama pull deepseek-coder && \
+    pkill ollama  # Optional: stop after pull (saves memory)
 
-# Make Ollama listen on all interfaces
-ENV OLLAMA_HOST=0.0.0.0
+# === OR use a smaller model to avoid timeout (RECOMMENDED) ===
+# RUN ollama serve & sleep 10 && ollama pull llama3.2:1b && pkill ollama
 
-# Expose port (Render sets $PORT automatically)
+# Ollama config
+ENV OLLAMA_HOST=0.0.0.0:11434
+ENV PORT=10000
 EXPOSE $PORT
 
-# Start Ollama in background, wait a bit, then Flask
+# Start Ollama + Flask at runtime
 CMD ollama serve & sleep 10 && python web.py
