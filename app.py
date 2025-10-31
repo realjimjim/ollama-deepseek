@@ -13,7 +13,7 @@ while True:
     
     # Stream response in real-time
     stream = ollama.chat(
-        model='llama3.2:1b',
+        model="deepseek-r1:1.5b",
         messages=messages,
         options={"temperature": 0.2, "top_k": 30, "top_p": 0.7},
         stream=True
