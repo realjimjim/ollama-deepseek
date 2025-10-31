@@ -1,4 +1,4 @@
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 # Install Ollama + killall
 RUN apt-get update && apt-get install -y curl procps && \
