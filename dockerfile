@@ -12,9 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # === FIX: Start Ollama, pull model, stop with killall ===
-RUN ollama serve & \
-    sleep 10 && \
-    ollama pull phi3:mini && \
+RUN ollama serve & sleep 10 && \
+    ollama pull qwen2:0.5b && \
     killall ollama
 
 # Ollama config
