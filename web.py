@@ -29,7 +29,7 @@ def stream():
     def generate():
         try:
             stream = ollama.chat(
-                model="qwen2:0.5b",
+                model="qwen2:0.5b-instruct",
                 messages=[
                     {"role": "system", "content": "Short replies only."},
                     _latest_msg

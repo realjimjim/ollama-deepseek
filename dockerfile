@@ -21,5 +21,13 @@ ENV OLLAMA_CONTEXT_LENGTH=256
 
 EXPOSE $PORT
 
-# Start Ollama + Flask (no model pull loop — pull at build time)
-CMD ollama serve & python web.py
+# Start Ollama, pull model (retry if needed), then Flask
+CMD ollama serve & \
+    sleep 10 && \
+    echo "Pulling qwen2:0.5b-instruct..." && \
+    until ollama list | grep -q "qwen2:0.5b-instruct"; do \
+        ollama pull qwen2:0.5b-instruct || echo "Retry in 5s..."; \
+        sleep 5; \
+    done && \
+    echo "Model ready! Starting Flask on port $PORT..." && \
+    python web.py
