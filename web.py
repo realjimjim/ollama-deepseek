@@ -36,20 +36,15 @@ def stream():
                 ],
                 stream=True,
                 options={
-                    "num_ctx": 2048,        # ← Critical for speed
-                    "num_predict": 128,     # ← Faster than 64
+                    "num_ctx": 256,       # Critical: 256 tokens = ~6 MiB KV cache
+                    "num_predict": 64,    # Max 64 output tokens
                     "temperature": 0.7,
-                    "num_thread": 4,        # ← Use CPU cores
-                    "num_batch": 512,       # ← Faster inference
-                    "num_gpu": 0,           # ← CPU only (safe)
                 },
             )
 
             for chunk in stream:
                 text = chunk["message"]["content"]
                 yield f"data: {text.replace(chr(10), '<br>')}\n\n"
-                # Optional: flush every chunk
-                import time; time.sleep(0.001)
 
         except Exception as e:
             yield f"data: [error] {str(e)}\n\n"
@@ -62,4 +57,4 @@ def health():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=False)
