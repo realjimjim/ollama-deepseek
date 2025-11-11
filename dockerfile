@@ -24,9 +24,9 @@ EXPOSE $PORT
 # Start Ollama, pull model (retry if needed), then Flask
 CMD ollama serve & \
     sleep 10 && \
-    echo "Pulling phi3:mini..." && \
-    until ollama list | grep -q "phi3:mini"; do \
-        ollama pull phi3:mini || echo "Retry in 5s..."; \
+    echo "Pulling qwen2:0.5b-instruct..." && \
+    until ollama list | grep -q "qwen2:0.5b-instruct"; do \
+        ollama pull qwen2:0.5b-instruct || echo "Retry in 5s..."; \
         sleep 5; \
     done && \
     echo "Model ready! Starting Flask on port $PORT..." && \

@@ -1,9 +1,10 @@
+# web.py
 from flask import Flask, render_template, request, Response, jsonify
 import ollama
 import os
 
 app = Flask(__name__)
-_chat_history = [{"role": "system", "content": "Friendly and Short replies only."}]
+_latest_msg = None
 
 @app.route("/")
 def home():
@@ -11,44 +12,44 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    global _chat_history
+    global _latest_msg
     msg = request.json.get("message", "").strip()
     if not msg:
         return jsonify({"error": "empty"}), 400
-
-    _chat_history.append({"role": "user", "content": msg})
-    if len(_chat_history) > 11:
-        _chat_history = [_chat_history[0]] + _chat_history[-10:]
-
+    _latest_msg = {"role": "user", "content": msg}
     return jsonify({"status": "ok"})
 
 @app.route("/stream")
 def stream():
-    global _chat_history
+    global _latest_msg
+    if not _latest_msg:
+        def gen(): yield "data: [no message]\n\n"
+        return Response(gen(), mimetype="text/event-stream")
 
     def generate():
         try:
             stream = ollama.chat(
-                model="phi3:mini",  # ← Faster model
-                messages=_chat_history,
+                model="qwen2:0.5b-instruct",
+                messages=[
+                    {"role": "system", "content": "Friendly and Short replies only."},
+                    _latest_msg
+                ],
                 stream=True,
                 options={
-                    "num_ctx": 2048,
-                    "num_predict": 256,
+                    "num_ctx": 2048,        # ← Critical for speed
+                    "num_predict": 128,     # ← Faster than 64
                     "temperature": 0.7,
-                    "num_thread": 4,
-                    "num_batch": 512,
-                    "flash_attn": True,
+                    "num_thread": 4,        # ← Use CPU cores
+                    "num_batch": 512,       # ← Faster inference
+                    "num_gpu": 0,           # ← CPU only (safe)
                 },
             )
 
             for chunk in stream:
                 text = chunk["message"]["content"]
                 yield f"data: {text.replace(chr(10), '<br>')}\n\n"
-
-            # Append assistant reply to history
-            full_reply = "".join([c["message"]["content"] for c in stream])
-            _chat_history.append({"role": "assistant", "content": full_reply})
+                # Optional: flush every chunk
+                import time; time.sleep(0.001)
 
         except Exception as e:
             yield f"data: [error] {str(e)}\n\n"
