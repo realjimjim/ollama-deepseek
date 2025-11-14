@@ -4,7 +4,6 @@ import ollama
 import os
 
 app = Flask(__name__)
-_latest_msg = None
 
 @app.route("/")
 def home():
@@ -12,32 +11,28 @@ def home():
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    global _latest_msg
-    msg = request.json.get("message", "").strip()
-    if not msg:
+    user_msg = request.json.get("message", "").strip()
+    if not user_msg:
         return jsonify({"error": "empty"}), 400
-    _latest_msg = {"role": "user", "content": msg}
-    return jsonify({"status": "ok"})
 
-@app.route("/stream")
-def stream():
-    global _latest_msg
-    if not _latest_msg:
-        def gen(): yield "data: [no message]\n\n"
-        return Response(gen(), mimetype="text/event-stream")
+    # Truncate user message to 80 tokens (very safe)
+    user_msg = " ".join(user_msg.split()[:80])
 
-    def generate():
+    # NO GLOBAL HISTORY — each request is isolated
+    messages = [
+        {"role": "system", "content": "Reply in under 50 words. Be concise."},
+        {"role": "user", "content": user_msg}
+    ]
+
+    def stream_response():
         try:
             stream = ollama.chat(
-                model="qwen2:0.5b-instruct",
-                messages=[
-                    {"role": "system", "content": "Friendly and Short replies only."},
-                    _latest_msg
-                ],
+                model="qwen2:0.5b-instruct-q4_0",  # Smaller quantized
+                messages=messages,
                 stream=True,
                 options={
-                    "num_ctx": 256,       # Critical: 256 tokens = ~6 MiB KV cache
-                    "num_predict": 64,    # Max 64 output tokens
+                    "num_ctx": 128,        # Only 128 tokens total context
+                    "num_predict": 48,     # MAX 48 output tokens
                     "temperature": 0.7,
                 },
             )
@@ -46,10 +41,13 @@ def stream():
                 text = chunk["message"]["content"]
                 yield f"data: {text.replace(chr(10), '<br>')}\n\n"
 
+            # Optional: force KV cache clear
+            yield "data: [DONE]\n\n"
+
         except Exception as e:
             yield f"data: [error] {str(e)}\n\n"
 
-    return Response(generate(), mimetype="text/event-stream")
+    return Response(stream_response(), mimetype="text/event-stream")
 
 @app.route("/health")
 def health():
